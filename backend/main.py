@@ -2,8 +2,6 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import chess
-import math
-import random
 
 app = FastAPI()
 
@@ -27,7 +25,7 @@ PIECE_VALUES = {
     chess.KING:      0,
 }
 
-def evaluate_board(board: chess.Board) -> int:
+def evaluate_board(board: chess.Board) -> int: 
     if board.is_checkmate():
         return -10000 if board.turn == chess.WHITE else 10000
     if board.is_stalemate():
@@ -43,6 +41,34 @@ def evaluate_board(board: chess.Board) -> int:
             score -= value
 
     return score
+        
+
+def minimax(board: chess.Board, depth: int, maximizing: bool) -> int:
+    if depth == 0 or board.is_game_over():
+        return evaluate_board(board)
+
+    if maximizing:
+        best_score = float("-inf")
+        for move in board.legal_moves:
+            board.push(move)
+            score = minimax(board, depth - 1, False)
+            board.pop()
+
+            best_score = max(best_score, score)
+
+        return best_score
+    else:
+        best_score = float("inf")
+
+        for move in board.legal_moves:
+            board.push(move)
+            score = minimax(board, depth - 1, True)
+            board.pop()
+
+            best_score = min(best_score, score)
+        
+        return best_score
+
 
 @app.post("/ai-move")
 def ai_move(req: MoveRequest):
@@ -51,14 +77,13 @@ def ai_move(req: MoveRequest):
     if board.is_game_over():
         return {"move": None, "fen": board.fen()}
 
-    legal_moves = list(board.legal_moves)
-
     best_move = None
     best_score = float("inf")
 
-    for move in legal_moves:
+    for move in board.legal_moves:
         board.push(move)
-        score = evaluate_board(board)
+        
+        score = minimax(board, depth=2, maximizing=True)
         board.pop()
 
         if score < best_score:
@@ -68,6 +93,6 @@ def ai_move(req: MoveRequest):
     board.push(best_move)
 
     return {
-        "move": move.uci(),
+        "move": best_move.uci(),
         "fen": board.fen(),
     }

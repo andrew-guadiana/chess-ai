@@ -2,7 +2,7 @@
 
 ## AI Improvements
 - [X] Material Evaluation 
-- [ ] Minimax search
+- [X] Minimax search
 - [ ] Alpha-beta pruning
 - [ ] Move ordering
 - [ ] Quiescence search
